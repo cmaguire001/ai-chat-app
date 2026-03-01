@@ -1,11 +1,21 @@
+import getConfig from 'next/config';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { messages } = req.body;
-  const apiKey = process.env.HUGGINGFACE_API_KEY;
+  if (!messages || !Array.isArray(messages)) return res.status(400).json({ error: 'Invalid messages' });
 
-  if (!apiKey || apiKey === 'your_key_here') {
-    await new Promise(r => setTimeout(r, 800));
+  // Try every possible way to get the API key
+  const { serverRuntimeConfig } = getConfig();
+  const apiKey = 
+    process.env.HUGGINGFACE_API_KEY || 
+    serverRuntimeConfig?.HUGGINGFACE_API_KEY ||
+    '';
+
+  console.log('API key found:', !!apiKey, '| Length:', apiKey.length);
+
+  if (!apiKey) {
     return res.status(200).json({ reply: "Demo mode — add HUGGINGFACE_API_KEY to get real AI responses!" });
   }
 
@@ -33,7 +43,7 @@ export default async function handler(req, res) {
     );
 
     const text = await response.text();
-    console.log('HF raw:', text);
+    console.log('HF status:', response.status, '| Raw:', text.slice(0, 200));
 
     if (!response.ok) {
       return res.status(500).json({ error: 'HF API error: ' + text });
@@ -42,8 +52,9 @@ export default async function handler(req, res) {
     const data = JSON.parse(text);
     const reply = data?.choices?.[0]?.message?.content || "No response generated.";
     return res.status(200).json({ reply });
+
   } catch (err) {
     console.error('Chat API error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error: ' + err.message });
   }
 }
