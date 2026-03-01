@@ -8,10 +8,7 @@ export default async function handler(req, res) {
 
   // Try every possible way to get the API key
   const { serverRuntimeConfig } = getConfig();
-  const apiKey = 
-    process.env.HUGGINGFACE_API_KEY || 
-    serverRuntimeConfig?.HUGGINGFACE_API_KEY ||
-    '';
+ const apiKey = process.env.HUGGINGFACE_API_KEY || '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';
 
   console.log('API key found:', !!apiKey, '| Length:', apiKey.length);
 
