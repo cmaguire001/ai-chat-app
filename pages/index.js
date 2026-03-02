@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import ThemeSelector from '../components/ThemeSelector';
 import Bubbles from '../components/Bubbles';
+import UnderwaterAudio, { playMessageSend, playReply } from '../components/UnderwaterAudio';
 
 function Message({ msg }) {
   const isUser = msg.role === 'user';
@@ -38,7 +39,6 @@ export default function Home() {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: "Hey! 👋 I'm your AI assistant. Ask me anything!" }
   ]);
-  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
@@ -61,9 +61,10 @@ export default function Home() {
     const text = textareaRef.current?.value?.trim();
     if (!text || isLoading) return;
 
+    if (theme === 'underwater') playMessageSend();
+
     const newMessages = [...messages, { role: 'user', content: text }];
     setMessages(newMessages);
-    setInput('');
     if (textareaRef.current) textareaRef.current.value = '';
     setIsLoading(true);
 
@@ -74,6 +75,7 @@ export default function Home() {
         body: JSON.stringify({ messages: newMessages }),
       });
       const data = await res.json();
+      if (theme === 'underwater') playReply();
       setMessages(m => [...m, { role: 'assistant', content: data.reply || data.error || 'Something went wrong.' }]);
     } catch {
       setMessages(m => [...m, { role: 'assistant', content: 'Network error. Please try again.' }]);
@@ -92,8 +94,12 @@ export default function Home() {
   const isUnderwater = theme === 'underwater';
 
   return (
-    <div className={`theme-${theme} ${isUnderwater ? 'underwater-bg' : ''}`} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'var(--bg)' }}>
+    <div
+      className={`theme-${theme} ${isUnderwater ? 'underwater-bg' : ''}`}
+      style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'var(--bg)' }}
+    >
       {isUnderwater && <Bubbles />}
+      {isUnderwater && <UnderwaterAudio active={isUnderwater} />}
 
       <div style={{ width: '100%', maxWidth: '680px', height: 'min(720px, 92vh)', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 2 }}>
 
@@ -106,7 +112,9 @@ export default function Home() {
               </div>
               <div>
                 <div style={{ fontWeight: 'bold', color: 'var(--text)', fontSize: '15px' }}>AI Chat</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{isUnderwater ? 'Deep sea edition 🌊' : 'Powered by Llama'}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  {isUnderwater ? 'Deep sea edition 🌊' : 'Powered by Llama'}
+                </div>
               </div>
             </div>
             <ThemeSelector theme={theme} setTheme={setTheme} />
@@ -114,7 +122,7 @@ export default function Home() {
         </div>
 
         {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px', background: 'var(--surface)', backdropFilter: isUnderwater ? 'blur(16px)' : 'none' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px', background: isUnderwater ? 'rgba(0,15,40,0.6)' : 'var(--surface)', backdropFilter: isUnderwater ? 'blur(12px)' : 'none' }}>
           {messages.map((msg, i) => <Message key={i} msg={msg} />)}
           {isLoading && <TypingDots />}
           <div ref={bottomRef} />
@@ -136,10 +144,12 @@ export default function Home() {
               disabled={isLoading}
               style={{ minHeight: '44px', padding: '10px 20px', borderRadius: '12px', background: 'var(--accent)', color: 'white', border: 'none', cursor: isLoading ? 'not-allowed' : 'pointer', fontWeight: 'bold', opacity: isLoading ? 0.5 : 1, fontSize: '14px' }}
             >
-              {isLoading ? '...' : isUnderwater ? '🌊 Send' : 'Send'}
+              {isLoading ? '...' : isUnderwater ? '🌊' : 'Send'}
             </button>
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '6px' }}>Enter to send · Shift+Enter for new line</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '6px' }}>
+            Enter to send · Shift+Enter for new line
+          </div>
         </div>
 
       </div>
