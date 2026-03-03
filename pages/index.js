@@ -2,21 +2,19 @@ import { useState, useEffect, useRef } from 'react';
 import ThemeSelector from '../components/ThemeSelector';
 import Bubbles from '../components/Bubbles';
 import UnderwaterAudio, { playMessageSend, playReply } from '../components/UnderwaterAudio';
+import { XPBar, BadgeButton, BadgePanel, XPBurst, BadgeToast, BADGES, getLevelInfo } from '../components/Gamification';
 
 function Message({ msg }) {
   const isUser = msg.role === 'user';
   return (
     <div style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start', marginBottom: '12px' }}>
       <div style={{
-        maxWidth: '75%',
-        padding: '10px 14px',
+        maxWidth: '75%', padding: '10px 14px',
         borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
         background: isUser ? 'var(--accent)' : 'var(--surface2)',
         color: isUser ? '#fff' : 'var(--text)',
         border: isUser ? 'none' : '1px solid var(--border)',
-        fontSize: '14px',
-        lineHeight: '1.5',
-        wordBreak: 'break-word',
+        fontSize: '14px', lineHeight: '1.5', wordBreak: 'break-word',
       }}>
         {msg.content}
       </div>
@@ -34,12 +32,18 @@ function TypingDots() {
   );
 }
 
+const initialStats = { totalXP: 0, totalMessages: 0, level: 1, unlockedBadges: [] };
+
 export default function Home() {
   const [theme, setThemeRaw] = useState('light');
+  const [badgeOpen, setBadgeOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: "Hey! 👋 I'm your AI assistant. Ask me anything!" }
+    { role: 'assistant', content: "Hey! 👋 I'm your AI assistant. Ask me anything and earn XP! 🎮" }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [stats, setStats] = useState(initialStats);
+  const [xpBurst, setXpBurst] = useState({ visible: false, amount: 0 });
+  const [badgeToast, setBadgeToast] = useState({ visible: false, badge: null });
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -57,6 +61,23 @@ export default function Home() {
     localStorage.setItem('chat-theme', t);
   }
 
+  function awardXP(amount, newStats) {
+    setXpBurst({ visible: true, amount });
+    setTimeout(() => setXpBurst({ visible: false, amount }), 1800);
+
+    const prevBadges = newStats.unlockedBadges || [];
+    const newBadges = BADGES.filter(b => b.condition(newStats) && !prevBadges.includes(b.id));
+    if (newBadges.length > 0) {
+      const badge = newBadges[0];
+      setTimeout(() => {
+        setBadgeToast({ visible: true, badge });
+        setTimeout(() => setBadgeToast({ visible: false, badge }), 3000);
+      }, 600);
+      return [...prevBadges, ...newBadges.map(b => b.id)];
+    }
+    return prevBadges;
+  }
+
   async function sendMessage() {
     const text = textareaRef.current?.value?.trim();
     if (!text || isLoading) return;
@@ -67,6 +88,17 @@ export default function Home() {
     setMessages(newMessages);
     if (textareaRef.current) textareaRef.current.value = '';
     setIsLoading(true);
+
+    const xpGained = Math.floor(Math.random() * 10) + 10;
+    const newStats = {
+      ...stats,
+      totalXP: stats.totalXP + xpGained,
+      totalMessages: stats.totalMessages + 1,
+      level: getLevelInfo(stats.totalXP + xpGained).current.level,
+    };
+    const updatedBadges = awardXP(xpGained, newStats);
+    newStats.unlockedBadges = updatedBadges;
+    setStats(newStats);
 
     try {
       const res = await fetch('/api/chat', {
@@ -101,7 +133,12 @@ export default function Home() {
       {isUnderwater && <Bubbles />}
       {isUnderwater && <UnderwaterAudio active={isUnderwater} />}
 
-      <div style={{ width: '100%', maxWidth: '680px', height: 'min(720px, 92vh)', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 2 }}>
+      {/* Fixed overlays at root level — outside any backdrop-filter context */}
+      <XPBurst xp={xpBurst.amount} visible={xpBurst.visible} />
+      <BadgeToast badge={badgeToast.badge} visible={badgeToast.visible} />
+      <BadgePanel stats={stats} open={badgeOpen} onClose={() => setBadgeOpen(false)} />
+
+      <div style={{ width: '100%', maxWidth: '680px', height: 'min(720px, 92vh)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
 
         {/* Header */}
         <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '16px 20px', borderRadius: '16px 16px 0 0', backdropFilter: isUnderwater ? 'blur(16px)' : 'none' }}>
@@ -117,7 +154,11 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <ThemeSelector theme={theme} setTheme={setTheme} />
+            {/* BadgeButton sits inline with ThemeSelector — panel renders at root level above */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <BadgeButton stats={stats} onClick={() => setBadgeOpen(o => !o)} />
+              <ThemeSelector theme={theme} setTheme={setTheme} />
+            </div>
           </div>
         </div>
 
@@ -127,6 +168,9 @@ export default function Home() {
           {isLoading && <TypingDots />}
           <div ref={bottomRef} />
         </div>
+
+        {/* XP Bar */}
+        <XPBar stats={stats} />
 
         {/* Input */}
         <div style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)', padding: '12px 16px', borderRadius: '0 0 16px 16px', backdropFilter: isUnderwater ? 'blur(16px)' : 'none' }}>
