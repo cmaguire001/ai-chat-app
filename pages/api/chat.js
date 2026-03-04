@@ -6,9 +6,12 @@ export default async function handler(req, res) {
   const { messages } = req.body;
   if (!messages || !Array.isArray(messages)) return res.status(400).json({ error: 'Invalid messages' });
 
-  // Try every possible way to get the API key
+  // Try every possible way to get the API key (but never hardcode it)
   const { serverRuntimeConfig } = getConfig();
- const apiKey = process.env.HUGGINGFACE_API_KEY || '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';
+  const apiKey =
+    process.env.HUGGINGFACE_API_KEY ||
+    serverRuntimeConfig?.HUGGINGFACE_API_KEY ||
+    null;
 
   console.log('API key found:', !!apiKey, '| Length:', apiKey.length);
 

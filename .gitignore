@@ -1,0 +1,15 @@
+node_modules
+.next
+.turbo
+.vercel
+
+# Local environment files (do not commit secrets)
+.env
+.env.*
+.env.local
+
+# OS / editor files
+.DS_Store
+.idea
+.vscode
+
