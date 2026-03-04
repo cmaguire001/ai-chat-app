@@ -1,23 +1,33 @@
-export default function ThemeSelector({ theme, setTheme }) {
-  const themes = [
-    { id: 'light', label: '☀️ Light' },
-    { id: 'dark',  label: '🌙 Dark'  },
-    { id: 'underwater', label: '🌊 Underwater' },
-  ];
+import React from 'react';
+import { THEMES } from './gamification/constants/gamification';
 
+export default function ThemeSelector({ theme, setTheme, totalMessages = 0 }) {
+  const isUnlocked = (t) => !t.locked || totalMessages >= t.unlockMessages;
   return (
-    <div className="flex gap-2 flex-wrap">
-      {themes.map(t => (
-        <button
-          key={t.id}
-          onClick={() => setTheme(t.id)}
-          className={`theme-btn px-3 py-1.5 rounded-full text-xs font-display font-600 tracking-wide ${
-            theme === t.id ? 'active' : ''
-          }`}
-        >
-          {t.label}
-        </button>
-      ))}
+    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+      {THEMES.map((t) => {
+        const unlocked = isUnlocked(t);
+        return (
+          <button
+            key={t.id}
+            onClick={() => unlocked && setTheme(t.id)}
+            style={{
+              opacity: unlocked ? 1 : 0.5,
+              cursor: unlocked ? 'pointer' : 'not-allowed',
+              background: theme === t.id ? 'var(--accent)' : 'var(--surface2)',
+              color: theme === t.id ? '#fff' : 'var(--text)',
+              border: '1px solid var(--border)',
+              padding: '4px 12px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '600'
+            }}
+          >
+            {!unlocked && <span style={{ marginRight: '4px' }}>🔒</span>}
+            {t.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

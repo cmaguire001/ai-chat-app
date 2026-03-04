@@ -2,11 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   env: {
-    HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY,
+    HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY || 'your_key_here',
   },
-  serverRuntimeConfig: {
-    HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY,
-  },
-};
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig
