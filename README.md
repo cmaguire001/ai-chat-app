@@ -70,3 +70,15 @@ npm run dev
 - Model may take 20–30s to warm up on HF free tier (cold start)
 - Without an API key, the app runs in **demo mode** with friendly placeholder responses
 - You can swap the model in `pages/api/chat.js` for any other HF Inference API model
+
+Technical Skills Demonstrated
+
+Debugged and resolved a multi-layer environment variable conflict across dev and production environments in a Next.js / Cloud Run deployment
+Identified and removed hardcoded API credentials from git history, eliminating a critical security vulnerability
+Architected a 3-layer environment variable redundancy system using .replit, .env.production.local, and deployment run commands
+Built custom diagnostic API endpoints to inspect runtime environment state in production
+Diagnosed and resolved Replit Cloud Run container caching issues through forced clean redeployment
+Managed HuggingFace API token rotation and access scope configuration
+Implemented structured server-side logging to enable real-time production debugging via curl
+Identified .gitignore misconfiguration that was silently excluding environment files from production builds
+Demonstrated systematic root cause analysis methodology across 6+ potential failure points before isolating the true issue
